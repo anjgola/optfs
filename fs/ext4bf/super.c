@@ -4376,7 +4376,10 @@ int ext4bf_force_commit(struct super_block *sb)
  */
 int ext4bf_force_dsync_commit(struct super_block *sb)
 {
-	printk("ayoosh_ext4bf_force_dsync_commit_called");
+#if PROJ_736
+    unsigned static int force_dsync_cnt = 0;
+    printk("736: ext4bf_force_dsync_commit super.c : %d \n", ++force_dsync_cnt);
+#endif
 	journal_t *journal;
 	int ret = 0;
 

@@ -1272,7 +1272,11 @@ int dirty_count = 0;
 /* ext4bf: handling dirty data. */
 int jbdbf_journal_dirty_data(handle_t *handle, struct buffer_head *bh)
 {
-	transaction_bf_t *transaction = handle->h_transaction;
+#if PROF_736
+    unsigned static int jrnl_dirty_cnt = 0;
+    printk("736: jbdbf_journal_dirty_data transaction.c : %d \n", ++jrnl_dirty_cnt);
+#endif
+    transaction_bf_t *transaction = handle->h_transaction;
 	journal_t *journal = transaction->t_journal;
 	struct journal_bf_head *jh = bh2jhbf(bh);
 	int ret = 0;
