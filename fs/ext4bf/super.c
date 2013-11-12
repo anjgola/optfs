@@ -3873,6 +3873,7 @@ no_journal:
 	} else
 		descr = "out journal";
 
+	printk("ayoosh_please_work");
 	ext4bf_msg(sb, KERN_INFO, "mounted filesystem with%s. "
 		 "Opts: %s%s%s", descr, sbi->s_es->s_mount_opts,
 		 *sbi->s_es->s_mount_opts ? "; " : "", orig_data);
@@ -4375,6 +4376,7 @@ int ext4bf_force_commit(struct super_block *sb)
  */
 int ext4bf_force_dsync_commit(struct super_block *sb)
 {
+	printk("ayoosh_ext4bf_force_dsync_commit_called");
 	journal_t *journal;
 	int ret = 0;
 

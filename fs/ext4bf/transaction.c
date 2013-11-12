@@ -1215,6 +1215,11 @@ __flush_data_batch(int *batch_count)
 }
 
 static void write_out_dirty_blocks(journal_t *journal, transaction_bf_t *commit_transaction) {
+#if PROJ_736
+    unsigned static int wodbcnt = 0;
+    printk("736: write_out_dirty_blocks called times %d \n", ++wodbcnt);
+#endif
+
     jbd_debug(6, "Doing early processing of blocks for transaction %lu\n",
             commit_transaction->t_tid);
     /* ext4bf: attempt to read the data blocks inside the t_forget list of the

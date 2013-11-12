@@ -34,6 +34,7 @@
 #include <linux/slab.h>
 #endif
 
+#define PROJ_736 1
 #define journal_oom_retry 1
 
 /*

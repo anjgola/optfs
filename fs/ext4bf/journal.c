@@ -405,6 +405,11 @@ int jbdbf_journal_write_metadata_buffer(transaction_bf_t *transaction,
 				  struct journal_bf_head **jh_out,
 				  unsigned long long blocknr)
 {
+#if PROJ_736
+    unsigned static int jrnl_metadata_write_cnt = 0;
+    jrnl_metadata_write_cnt++;
+    printk("736: jbdbf_journal_write_metadata_buffer called times: %d\n", jrnl_metadata_write_cnt);
+#endif
 	int need_copy_out = 0;
 	int done_copy_out = 0;
 	int do_escape = 0;
@@ -564,7 +569,11 @@ repeat:
 void jbdbf_write_data_buffer(transaction_bf_t *transaction,
         struct journal_bf_head *jh_in)
 {
-	journal_t *journal = transaction->t_journal;
+#if PROJ_736
+    unsigned static int jwdb_cnt = 0;
+    printk("736: jbdbf_write_data_buffer called times %d \n", ++jwdb_cnt);
+#endif
+    journal_t *journal = transaction->t_journal;
 	struct buffer_head *bh_in = jh2bhbf(jh_in);
     
     jbd_debug(6, "EXT4BF: adding data block %lu to write-later list\n",
@@ -718,6 +727,7 @@ int jbdbf_journal_force_commit_nested(journal_t *journal)
  */
 int jbdbf_journal_start_commit(journal_t *journal, tid_t *ptid)
 {
+	printk("ayoosh_jbdbf_journal_start_commit_called");
 	int ret = 0;
 
 	write_lock(&journal->j_state_lock);

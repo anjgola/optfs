@@ -40,6 +40,11 @@
  */
 
 /*
+ * 736 debug stuff
+*/
+#define PROJ_736 1
+
+/*
  * Define EXT4FS_DEBUG to produce debug messages
  */
 #undef EXT4FS_DEBUG

@@ -803,6 +803,11 @@ static void walk_and_print_buffers(tid_t tid,
                  unsigned from,
                  unsigned to)
 {
+#if PROJ_736
+    unsigned static int wnpbuf = 0;
+    printk("736: walk_and_print_buffers called times: %d \n", ++wnpbuf);
+#endif
+
     struct buffer_head *bh;
     unsigned block_start, block_end;
     unsigned blocksize = head->b_size;
