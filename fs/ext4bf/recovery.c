@@ -323,7 +323,11 @@ static int is_datachecksum_err(struct dc_struct *dc_object, unsigned int *next_c
 
 static int read_and_verify_checksums(journal_t *journal, struct buffer_head *bh, struct dc_struct *dc_object, unsigned int next_commit_ID)
 {
-	char *			tagp;
+#ifdef PROJ_736
+    unsigned static int checksum_read_cnt = 0;
+    printk("736: read_and_verify_checksums recovery.c : %d \n", ++checksum_read_cnt);
+#endif
+    char *			tagp;
 	journal_block_tag_t *	tag;
 	int			nr = 0, size = journal->j_blocksize;
 	int			tag_bytes = journal_tag_bytes(journal);

@@ -3873,7 +3873,6 @@ no_journal:
 	} else
 		descr = "out journal";
 
-	printk("ayoosh_please_work");
 	ext4bf_msg(sb, KERN_INFO, "mounted filesystem with%s. "
 		 "Opts: %s%s%s", descr, sbi->s_es->s_mount_opts,
 		 *sbi->s_es->s_mount_opts ? "; " : "", orig_data);

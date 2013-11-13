@@ -731,7 +731,11 @@ int jbdbf_journal_force_commit_nested(journal_t *journal)
  */
 int jbdbf_journal_start_commit(journal_t *journal, tid_t *ptid)
 {
-	printk("ayoosh_jbdbf_journal_start_commit_called");
+#if PROJ_736
+    static unsigned int start_commit_cnt = 0;
+    printk("736: jbdbf_journal_start_commit journal.c : %d \n", ++start_commit_cnt);
+#endif
+
 	int ret = 0;
 
 	write_lock(&journal->j_state_lock);
