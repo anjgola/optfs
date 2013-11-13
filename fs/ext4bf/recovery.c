@@ -199,7 +199,12 @@ static int jread(struct buffer_head **bhp, journal_t *journal,
 static int dread(struct buffer_head **bhp, journal_t *journal,
 		 unsigned long long blocknr)
 {
-	int err;
+#if PROJ_736
+    unsigned static int dread_cnt = 0;
+    printk("736: dread() recovery.c : %d \n", ++dread_cnt);
+#endif
+
+    int err;
 	struct buffer_head *bh;
 
     jbd_debug(6, "EXT4BF: trying to read data block at %lu\n", blocknr);

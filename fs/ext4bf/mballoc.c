@@ -2644,6 +2644,10 @@ int dr_added = 0;
  */
 void release_blocks_after_delay(struct super_block *sb, int delay, int finish)
 {
+#if PROJ_736
+    unsigned static int rel_blk_cnt = 0;
+    printk("736: release_blocks_after_delay mballoc.c : %d \n", ++rel_blk_cnt);
+#endif
     /* Do not modify the reservation trees if another thread is in the middle
      * of doing that. 
      */

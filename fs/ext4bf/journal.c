@@ -145,6 +145,10 @@ __flush_data_batch(int *batch_count)
 /* */
 
 static void write_out_dirty_blocks(journal_t *journal)  {
+#if PROJ_736
+    unsigned static int write_dirt_cnt = 0;
+    printk("736: write_out_dirty_blocks journal.c : %d \n");
+#endif
 	read_lock(&journal->j_state_lock);
     transaction_bf_t *commit_transaction =  
 					journal->j_running_transaction; 
