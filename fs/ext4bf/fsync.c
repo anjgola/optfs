@@ -274,7 +274,6 @@ int ext4bf_osync_file(struct file *file, loff_t start, loff_t end)
     osync_cnt++;
     printk("736: ext4bf_osync_file called times: %d \n");
 #endif
-    printk("ayoosh_ext4bf_osync_file");
     struct inode *inode = file->f_mapping->host;
 	struct ext4bf_inode_info *ei = EXT4_I(inode);
 	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
@@ -333,7 +332,11 @@ int ext4bf_osync_file(struct file *file, loff_t start, loff_t end)
 
 int ext4bf_dsync_file(struct file *file, loff_t start, loff_t end)
 {
-	struct inode *inode = file->f_mapping->host;
+#if PROJ_736
+    unsigned static int dsync_cnt = 0;
+    printk("736: ext4bf_dsync_file called times: %d \n", ++dsync_cnt);
+#endif
+    struct inode *inode = file->f_mapping->host;
 	struct ext4bf_inode_info *ei = EXT4_I(inode);
 	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
 	int ret;
