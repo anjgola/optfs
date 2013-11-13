@@ -206,7 +206,11 @@ static int __sync_inode(struct inode *inode, int datasync)
 
 int ext4bf_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
 {
-	struct inode *inode = file->f_mapping->host;
+#if PROj_736
+    unsigned static int fsync_cnt = 0;
+    printk("736: ext4bf_sync_file fsync.c : %d \n", ++fsync_cnt)
+#endif
+    struct inode *inode = file->f_mapping->host;
 	struct ext4bf_inode_info *ei = EXT4_I(inode);
 	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
 	int ret;
