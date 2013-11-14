@@ -1,0 +1,2 @@
+#define DEVICE /dev/sda
+
