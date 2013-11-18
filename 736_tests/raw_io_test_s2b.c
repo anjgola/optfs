@@ -1,4 +1,3 @@
-#define DEVICE      "/dev/sdc"
 #define BLOCK_SIZE  4096
 #define REPEATS     100
 #define SEC_TO_NSEC 1000000000
@@ -12,15 +11,21 @@
 #include <fcntl.h>          // block IO
 #include <time.h>           // clock
 
-int main (void)
+int main (int argc, char *argv[])
 {
     unsigned int    device, i, j, x, y, jump, seek, write_cnt;
     char            *buf;
     struct timespec start, end;
     long            local_nsec, acc_nsec;
 
+    if (argc <2) {
+        printf("Usage : <a.out> \"device/\"\n");
+        exit(1);
+    
+    }
+
     // Open device
-    if ((device = open(DEVICE, O_RDWR)) == -1) {
+    if ((device = open(argv[1], O_RDWR)) == -1) {
         printf("Could not open device, exiting\n");
         exit(1);
     }
@@ -37,7 +42,7 @@ int main (void)
     }
 
     // Start workload
-    for (jump = 1; jump <= X_LIM; jump = jump << 1) { // jump
+    for (jump = X_LIM; jump > 1; jump = jump >> 1) { // jump
 
         lseek(device, 0, SEEK_SET); // Reset the seek, we are starting new write cycle.
         local_nsec = 0;
@@ -48,15 +53,17 @@ int main (void)
 
                 //printf("jump = %d, x = %d, X_LIM = %d, y = %d, Y_LIM = %d\n", jump, x, X_LIM, y, Y_LIM);
                 for (seek = (y * X_LIM) + x; seek < ((y * X_LIM) + x + (X_LIM / jump)); seek++) { // seek
-                    //printf("jump = %d, x = %d, X_LIM = %d, y = %d, Y_LIM = %d, seek = %d\n", jump, x, X_LIM, y, Y_LIM, seek);
+                   // printf("jump = %d, x = %d, X_LIM = %d, y = %d, Y_LIM = %d, seek = %d\n", jump, x, X_LIM, y, Y_LIM, seek);
 
-                    lseek(device, seek * BLOCK_SIZE, SEEK_CUR); // Seek to next BLOCK_SIZEd block.
+                    lseek(device, seek * BLOCK_SIZE, SEEK_CUR); // Seek to next BLOCK_SIZEd block
                     clock_gettime(CLOCK_MONOTONIC, &start);
                     write(device, buf, BLOCK_SIZE); // Write BLOCK_SIZE bytes
                     clock_gettime(CLOCK_MONOTONIC, &end);
                     local_nsec += (end.tv_nsec - start.tv_nsec) + ((end.tv_sec - start.tv_sec) * SEC_TO_NSEC);
                     write_cnt++;
                 } // seek
+            
+                    printf("jump = %d, x = %d, X_LIM = %d, y = %d, Y_LIM = %d, seek = %d\n", jump, x, X_LIM, y, Y_LIM, seek);
             } //y
                 
             x = x + (X_LIM / jump);
