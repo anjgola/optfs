@@ -2,11 +2,10 @@
  * gcc throughput.c -pthread
  */
 
-#define DEVICE      "/dev/sdc"
+#define DEVICE      "/mnt/mydisk/test.img"
 #define BLOCK_SIZE  4096
-#define SLEEP_TIME  100
-#define READ        0
-#define WRITE       1
+#define SLEEP_TIME  1
+#define BLOCK_RANGE (256 * 1024)    // 10GB file
 
 #include <stdio.h>          // printf
 #include <stdlib.h>         // malloc, rand
@@ -14,89 +13,125 @@
 #include <sys/stat.h>       // block IO
 #include <fcntl.h>          // block IO
 #include <pthread.h>        // pthread
+#include <stdbool.h>        // bool
+#define SEQ_R       1
+#define RANDOM_R    2
+#define SEQ_W       3
+#define RANDOM_W    4
 
-void thread_start (void);
-unsigned long write_cnt, read_cnt;
+void thread_start (int);
+unsigned long   op_cnt;
+char            buf[BLOCK_SIZE + 1];
+bool            thr_terminate;
 
 int main (void)
 {
-
+    unsigned int    i, device;
     unsigned long   op_accm;
     pthread_t       thread;
+    void            *join;
 
-    //Create pthreads
-    if(pthread_create(&thread, NULL, &thread_start, NULL) != 0) {
-        printf("Could not create thread\n");
-        exit (1);
+    printf("Using path %s\n", DEVICE);
+
+    for (i = SEQ_R; i <= RANDOM_R; i++) {
+        if ((device = open(DEVICE, O_RDWR)) == -1) {
+            printf(0, "Could not open device, exiting\n");
+            exit(1);
+        }
+        
+        sync(device);
+        close(device);
+        op_cnt = 0;
+        thr_terminate = false;
+
+        if(pthread_create(&thread, NULL, &thread_start, i) != 0) {
+            printf("Could not create thread\n");
+            exit (1);
+        }
+
+        sleep(SLEEP_TIME);
+        thr_terminate = true;
+#if 0
+        if(pthread_cancel(thread) != 0) {
+            printf("Could not cancel thread\n");
+        }
+#endif
+        pthread_join(thread, &join);
+
+        switch(i) {
+            case SEQ_R:
+            printf("Sequential Read throughput = %lu\n", op_cnt / SLEEP_TIME);
+            break;
+
+            case RANDOM_R:
+            printf("Random Read throughput = %lu\n", op_cnt / SLEEP_TIME);
+            break;
+
+            case SEQ_W:
+            printf("Sequential Write throughput = %lu\n", op_cnt / SLEEP_TIME);
+            break;
+
+            case RANDOM_W:
+            printf("Random Write throughput = %lu\n", op_cnt / SLEEP_TIME);
+            break;
+
+            default:
+            printf("Unknown operation. Should probably panic.\n");
+        }
     }
    
-    sleep(SLEEP_TIME);
-
-    if(pthread_cancel(thread) != 0) {
-        printf("Could not cancel thread\n");
-    }
-
-#if READ
-    printf("Read throughput = %lu\n", read_cnt / SLEEP_TIME);
-#endif
-#if WRITE
-    printf("Write throughput = %lu\n", write_cnt / SLEEP_TIME);
-#endif
     return(0);
 }
 
-void thread_start (void) {
+void thread_start (int mode) {
 
     //pthread stuff
     printf("Pthread enter\n");
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-    unsigned int    device, i;
-    char            *buf;
+    unsigned int    device, i, ret;
 
     // Open device
     if ((device = open(DEVICE, O_RDWR)) == -1) {
         fprintf(0, "Could not open device, exiting\n");
         exit(1);
     }   
-    
-    // Allocate buffer
-    if ((buf = (char *)malloc(BLOCK_SIZE)) == NULL) {
-        printf("Could not allocate buffer, exiting\n");
-        exit(1);
-    }   
-    
-    // Fill buffer 
-    for (i = 0; i < BLOCK_SIZE; i++) {
-        *(buf + i) = (char) (i & 0xFF);
-    }   
 
-    if (lseek(device, 0, SEEK_SET) == -1) {
-        printf("First seek failed\n");
-    }
-    
     // Start workload
     while (1) {
 
-#if WRITE
-        if(write(device, buf, BLOCK_SIZE) == -1) { // Write BLOCK_SIZE bytes
-            printf("Write Failed. write_cnt = %lu\n", write_cnt);
+        if (thr_terminate) {
+            break;
         }
-        write_cnt++;
-#endif
-#if READ
-        if(read(device, buf, BLOCK_SIZE) == -1) { // Write BLOCK_SIZE bytes
-            printf("Read Failed. write_cnt = %lu\n", write_cnt);
+
+        if ((mode == SEQ_W) || (mode == RANDOM_W)) {
+            if(write(device, buf, BLOCK_SIZE) == -1) { // Write BLOCK_SIZE bytes
+                printf("Write Failed. op_cnt = %lu\n", op_cnt);
+                exit(1);
+            }
+        } else {
+            if(read(device, buf, BLOCK_SIZE) == -1) { // Write BLOCK_SIZE bytes
+                printf("Read Failed. op_cnt = %lu\n", op_cnt);
+                exit(1);
+            }
         }
-        read_cnt++;
-#endif
-        if(lseek(device, BLOCK_SIZE, SEEK_CUR)==-1) {
-            printf("Seek failed\n");
-        }// Seek to next BLOCK_SIZEd block.
+        
+        op_cnt++;
+
+        if ((mode == SEQ_W) || (mode == SEQ_R)) {
+            if(lseek(device, BLOCK_SIZE, SEEK_CUR)==-1) {
+                printf("Seek failed\n");
+                exit(1);
+            }// Seek to next BLOCK_SIZEd block.
+        } else {
+            if(lseek(device, (rand() % BLOCK_RANGE) * BLOCK_SIZE, SEEK_SET)==-1) {
+                printf("Seek failed\n");
+            }
+        }
     }
 
     close(device);
-    return;
+    pthread_exit(&ret);
 }
 
