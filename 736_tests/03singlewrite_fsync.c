@@ -1,6 +1,6 @@
 #define BLOCK_SIZE  4096
-#define REPEATS     10
-#define RANGE       156301488
+#define REPEATS     1
+#define ADDR        (21 * 4096)
 #define SLEEP       30
 #define SEC_TO_NSEC 1000000000
 
@@ -18,7 +18,8 @@ int main (int argc, char *argv[])
     struct timespec start, end, start_fsync, end_fsync;
     long            local_nsec, acc_nsec, current_local_nsec, current_local_nsec_fsync;
     
-    //srand(time(NULL));
+    getchar();
+    srand(time(NULL));
 
     if (argc < 2) {
         printf("Usage <a.out> \"device/file path\"\n");
@@ -46,19 +47,18 @@ int main (int argc, char *argv[])
     printf("Fsync time \t\tOp time\n");
     for (i = 0, write_cnt = 0, local_nsec = 0; i < REPEATS; i++) { // jump
 
-        seek = rand() % RANGE;
-        seek *= BLOCK_SIZE;
-        if(lseek(device, seek, SEEK_SET)==-1){
+//        seek = rand() % RANGE;
+//        seek *= BLOCK_SIZE;
+        if(lseek(device, ADDR, SEEK_SET)==-1){
             printf("Lseek Failed. At seek = %d",seek);
             exit(1);
 
         }// Seek to next BLOCK_SIZEd block.
         clock_gettime(CLOCK_MONOTONIC, &start);
-        //write(device, buf, BLOCK_SIZE); // Write BLOCK_SIZE bytes
-        if(read(device, buf, BLOCK_SIZE)==-1){
+        if(write(device, buf, BLOCK_SIZE)==-1){
             printf("Write Failed.At seek = %d ",seek);
             exit(1);
-        } // Read BLOCK_SIZE bytes
+        }
         clock_gettime(CLOCK_MONOTONIC, &start_fsync);
         sync(device);
         clock_gettime(CLOCK_MONOTONIC, &end_fsync);
