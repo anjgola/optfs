@@ -34,7 +34,9 @@
 #include <linux/slab.h>
 #endif
 
-#define PROJ_736 1
+#define PROJ_736 0
+#define 736_TIME    1
+#define SEC_TO_NSEC 1000000000
 #define journal_oom_retry 1
 
 /*

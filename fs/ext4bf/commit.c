@@ -99,7 +99,13 @@ static int journal_submit_commit_record(journal_t *journal,
 					struct buffer_head **cbh,
 					__u32 crc32_sum)
 {
-	struct journal_bf_head *descriptor;
+#if TIME_736
+    struct timeval clock_time;
+    gettimeofday(&clock_time, NULL);
+    printk("736time: Start journal_submit_commit_record : %lu\n", (clock_time.tv_sec * SEC_TO_USEC) + clock_time.tv_usec);
+#endif
+    
+    struct journal_bf_head *descriptor;
 	struct commit_header *tmp;
 	struct buffer_head *bh;
 	int ret;
@@ -136,13 +142,15 @@ static int journal_submit_commit_record(journal_t *journal,
 	set_buffer_uptodate(bh);
 	bh->b_end_io = journal_end_buffer_io_sync;
 
+ //   clock_gettime(CLOCK_MONOTONIC, &start);
 	if (journal->j_flags & JBD2_BARRIER &&
 	    !JBD2_HAS_INCOMPAT_FEATURE(journal,
 				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT))
 		ret = submit_bh(WRITE_SYNC | WRITE_FLUSH_FUA, bh);
 	else
 		ret = submit_bh(WRITE_SYNC, bh);
-
+//    clock_gettime(CLOCK_MONOTONIC, &end);
+//    elapsed_nsec = end.tv_nsec - start.tv_nsec)
 	*cbh = bh;
 	return ret;
 }

@@ -18,8 +18,10 @@ int main (int argc, char *argv[])
     struct timespec start, end, start_fsync, end_fsync;
     long            local_nsec, acc_nsec, current_local_nsec, current_local_nsec_fsync;
     
-    getchar();
     srand(time(NULL));
+    getchar();
+    clock_gettime(CLOCK_MONOTONIC, &start_fsync);
+    printf("Current timestamp: %lu\n", (start_fsync.tv_sec * SEC_TO_NSEC) + start_fsync.tv_nsec);
 
     if (argc < 2) {
         printf("Usage <a.out> \"device/file path\"\n");
@@ -60,7 +62,7 @@ int main (int argc, char *argv[])
             exit(1);
         }
         clock_gettime(CLOCK_MONOTONIC, &start_fsync);
-        sync(device);
+        //sync(device);
         clock_gettime(CLOCK_MONOTONIC, &end_fsync);
         current_local_nsec = (start_fsync.tv_nsec - start.tv_nsec) + ((start_fsync.tv_sec - start.tv_sec) * SEC_TO_NSEC);
         current_local_nsec_fsync = (end_fsync.tv_nsec - start_fsync.tv_nsec) + ((end_fsync.tv_sec - start_fsync.tv_sec) * SEC_TO_NSEC);
