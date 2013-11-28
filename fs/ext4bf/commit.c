@@ -100,9 +100,9 @@ static int journal_submit_commit_record(journal_t *journal,
 					__u32 crc32_sum)
 {
 #if TIME_736
-    struct timeval clock_time;
-    gettimeofday(&clock_time, NULL);
-    printk("736time: Start journal_submit_commit_record : %lu\n", (clock_time.tv_sec * SEC_TO_USEC) + clock_time.tv_usec);
+    struct timespec clock_time;
+    getnstimeofday(&clock_time);
+    printk("736time: Start journal_submit_commit_record : %lu\n", (clock_time.tv_sec * NSEC_PER_SEC) + clock_time.tv_nsec);
 #endif
     
     struct journal_bf_head *descriptor;

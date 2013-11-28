@@ -43,8 +43,9 @@
  * 736 debug stuff
 */
 #define PROJ_736    0
-#define 736_TIME    1
+#define TIME_736    1
 #define SEC_TO_NSEC 1000000000
+#define SEC_TO_USEC 1000000
 /*
  * Define EXT4FS_DEBUG to produce debug messages
  */
