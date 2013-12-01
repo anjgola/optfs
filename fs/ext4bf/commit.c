@@ -30,6 +30,10 @@
 #include <asm/system.h>
 #include "ext4bf.h"
 
+#if TIME_736
+struct timespec clock_time;
+#endif
+
 /*
  * Default IO end handler for temporary BJ_IO buffer_heads.
  */
@@ -93,18 +97,16 @@ nope:
  * entirely.
  *
  * Returns 1 if the journal needs to be aborted or 0 on success
+
  */
 static int journal_submit_commit_record(journal_t *journal,
 					transaction_bf_t *commit_transaction,
 					struct buffer_head **cbh,
 					__u32 crc32_sum)
 {
-#if TIME_736
-    struct timespec clock_time;
-    getnstimeofday(&clock_time);
-    printk("736time: Start journal_submit_commit_record : %lu\n", (clock_time.tv_sec * NSEC_PER_SEC) + clock_time.tv_nsec);
-#endif
     
+   // TIMESTAMP("START", "journal_submit_commit_record", "");
+
     struct journal_bf_head *descriptor;
 	struct commit_header *tmp;
 	struct buffer_head *bh;
@@ -142,17 +144,16 @@ static int journal_submit_commit_record(journal_t *journal,
 	set_buffer_uptodate(bh);
 	bh->b_end_io = journal_end_buffer_io_sync;
 
- //   clock_gettime(CLOCK_MONOTONIC, &start);
 	if (journal->j_flags & JBD2_BARRIER &&
 	    !JBD2_HAS_INCOMPAT_FEATURE(journal,
 				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT))
 		ret = submit_bh(WRITE_SYNC | WRITE_FLUSH_FUA, bh);
 	else
 		ret = submit_bh(WRITE_SYNC, bh);
-//    clock_gettime(CLOCK_MONOTONIC, &end);
-//    elapsed_nsec = end.tv_nsec - start.tv_nsec)
 	*cbh = bh;
-	return ret;
+
+//    TIMESTAMP("END", "journal_submit_commit_record", "")
+    return ret; 
 }
 
 /*
@@ -287,6 +288,7 @@ static int journal_finish_inode_data_buffers(journal_t *journal,
 	return ret;
 }
 
+/*736  : Calculates the checksum of the buffer head*/
 __u32 jbdbf_checksum_data(__u32 crc32_sum, struct buffer_head *bh)
 {
 	struct page *page = bh->b_page;
@@ -347,7 +349,7 @@ __flush_data_batch(int *batch_count)
  */
 void jbdbf_journal_commit_transaction(journal_t *journal)
 {
-	struct transaction_bf_stats_s stats;
+    struct transaction_bf_stats_s stats;
 	transaction_bf_t *commit_transaction;
 	struct journal_bf_head *jh, *new_jh, *descriptor;
 	struct buffer_head **wbuf = journal->j_wbuf;
@@ -376,6 +378,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 	 */
 
 	/* Do we need to erase the effects of a prior jbdbf_journal_flush? */
+    TIMESTAMP("START", "Phase 1","");
 	if (journal->j_flags & JBD2_FLUSHED) {
 		jbd_debug(3, "super block updated\n");
 		jbdbf_journal_update_superblock(journal, 1);
@@ -466,6 +469,8 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 	__jbdbf_journal_clean_checkpoint_list(journal);
 	spin_unlock(&journal->j_list_lock);
 
+    TIMESTAMP("END", "phase 1","");
+    TIMESTAMP("START", "phase 2","");
 	jbd_debug(3, "JBD2: commit phase 1\n");
 
 	/*
@@ -484,6 +489,9 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 	commit_transaction->t_log_start = journal->j_head;
 	wake_up(&journal->j_wait_transaction_locked);
 	write_unlock(&journal->j_state_lock);
+    
+    TIMESTAMP("END", "phase 2","");
+   TIMESTAMP("START", "phase 3","");
 
 	jbd_debug(3, "JBD2: commit phase 2\n");
 
@@ -501,6 +509,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
         if (!jh) {
             break;
         }
+
         struct buffer_head *bh = jh2bhbf(jh);
         if (!bh) break;
         
@@ -533,6 +542,8 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
     jbd_debug(6, "EXT4BF: Ending the issue of data blocks\n");
 #endif
 
+    TIMESTAMP("END", "phase 3","");
+    TIMESTAMP("START", "phase 4","");
 	/*
 	 * Now start flushing things to disk, in the order they appear
 	 * on the transaction lists.  Data blocks go first.
@@ -550,6 +561,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 
 	jbd_debug(3, "JBD2: commit phase 2\n");
 
+    TIMESTAMP("END", "phase 4","");
 	/*
 	 * Way to go: we have now written out all of the data for a
 	 * transaction!  Now comes the tricky part: we need to write out
@@ -606,6 +618,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 		   record the metadata buffer. */
 
 		if (!descriptor) {
+            TIMESTAMP("START", "phase 5","case 1");
 			struct buffer_head *bh;
 
 			J_ASSERT (bufs == 0);
@@ -675,11 +688,13 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
                 jbdbf_free_data_tag(entry);
             }
 #endif
+        TIMESTAMP("END", "5","1");
         }
         /* Where is the buffer to be written? */
 
         jbd_debug(6, "EXT4BF: processing a metadata block\n");
 
+        TIMESTAMP("START", "phase 5","2");
         /* ext4bf: continue with normal procesing. */
 		err = jbdbf_journal_next_log_block(journal, &blocknr);
 		
@@ -751,11 +766,14 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
         }
         jbd_debug(6, "EXT4BF: finished writing tags.");
 
+        TIMESTAMP("END", "phase 5","2");
+        /* ext4bf: continue with normal procesing. */
 		/* If there's no more to do, or if the descriptor is full,
 		   let the IO rip! */
-
 done_with_tags:
 
+        TIMESTAMP("START","phase 5","3");
+        /* ext4bf: continue with normal procesing. */
         jbd_debug(6, "EXT4BF: gonna submit the I/Os\n");
 		if (bufs == journal->j_wbufsize ||
 		    commit_transaction->t_buffers == NULL ||
@@ -807,8 +825,10 @@ start_journal_io:
 		err = 0;
 	}
 
+    TIMESTAMP("END", "phase 5","3");
 wait_for_data:
     /* ext4bf: Wait for previous I/O to complete.*/
+    TIMESTAMP("START", "phase 5","4");
     while (commit_transaction->t_dirty_data_list) {
         struct buffer_head *bh;
 
@@ -836,6 +856,8 @@ wait_for_data:
 	J_ASSERT(commit_transaction->t_state == T_COMMIT);
 	commit_transaction->t_state = T_COMMIT_DFLUSH;
 	write_unlock(&journal->j_state_lock);
+    TIMESTAMP("END", "phase 5","4");
+    TIMESTAMP("START", "phase 5","5");
 
 	/* 
 	 * If the journal is not located on the file system device,
@@ -857,6 +879,9 @@ wait_for_data:
 	}
 
 	blk_finish_plug(&plug);
+    TIMESTAMP("END", "phase 5","5");
+    TIMESTAMP("START", "phase 5","6");
+    
 
 	/* Lo and behold: we have just managed to send a transaction to
            the log.  Before we can commit it, wait for the IO so far to
@@ -876,6 +901,8 @@ wait_for_data:
 	 * See __journal_try_to_free_buffer.
 	 */
 wait_for_iobuf:
+
+    TIMESTAMP("START", "phase 5","6");
 	while (commit_transaction->t_iobuf_list != NULL) {
 		struct buffer_head *bh;
 
@@ -933,12 +960,14 @@ wait_for_iobuf:
 		__brelse(bh);
 	}
 
+    TIMESTAMP("END", "phase 5","6");
 	J_ASSERT (commit_transaction->t_shadow_list == NULL);
 
 	jbd_debug(3, "JBD2: commit phase 4\n");
 
 	/* Here we wait for the revoke record and descriptor record buffers */
  wait_for_ctlbuf:
+    TIMESTAMP("START", "phase 5","7");
 	while (commit_transaction->t_log_list != NULL) {
 		struct buffer_head *bh;
 
@@ -1011,6 +1040,8 @@ wait_for_iobuf:
 	J_ASSERT(commit_transaction->t_iobuf_list == NULL);
 	J_ASSERT(commit_transaction->t_shadow_list == NULL);
 	J_ASSERT(commit_transaction->t_log_list == NULL);
+   
+    TIMESTAMP("END", "phase 5","7");
 
     /* ext4bf: set checkpoint time for the whole transaction. */
     if (durable_commit == 1) {
@@ -1021,6 +1052,8 @@ wait_for_iobuf:
     }
 
 restart_loop:
+    TIMESTAMP("START", "phase 6","");
+
 	/*
 	 * As there are other places (journal_unmap_buffer()) adding buffers
 	 * to this list we have to be careful and hold the j_list_lock.
@@ -1110,38 +1143,39 @@ restart_loop:
 			JBUFFER_TRACE(jh, "add to new checkpointing trans");
 			__jbdbf_journal_insert_checkpoint(jh, commit_transaction);
 			if (is_journal_aborted(journal))
-				clear_buffer_jbddirty(bh);
-		} else {
-			J_ASSERT_BH(bh, !buffer_dirty(bh));
-			/*
-			 * The buffer on BJ_Forget list and not jbddirty means
-			 * it has been freed by this transaction and hence it
-			 * could not have been reallocated until this
-			 * transaction has committed. *BUT* it could be
-			 * reallocated once we have written all the data to
-			 * disk and before we process the buffer on BJ_Forget
-			 * list.
-			 */
-			if (!jh->b_next_transaction)
-				try_to_free = 1;
-		}
-		JBUFFER_TRACE(jh, "refile or unfile buffer");
-		__jbdbf_journal_refile_buffer(jh);
-		jbdbf_unlock_bh_state(bh);
-		if (try_to_free)
-			release_buffer_page(bh);	/* Drops bh reference */
-		else
-			__brelse(bh);
-		cond_resched_lock(&journal->j_list_lock);
-	}
-	spin_unlock(&journal->j_list_lock);
-
-	/*
-	 * This is a bit sleazy.  We use j_list_lock to protect transition
-	 * of a transaction into T_FINISHED state and calling
-	 * __jbdbf_journal_drop_transaction(). Otherwise we could race with
-	 * other checkpointing code processing the transaction...
-	 */
+                clear_buffer_jbddirty(bh);
+        } else {
+            J_ASSERT_BH(bh, !buffer_dirty(bh));
+                /*
+                 * The buffer on BJ_Forget list and not jbddirty means
+                 * it has been freed by this transaction and hence it
+                 * could not have been reallocated until this
+                 * transaction has committed. *BUT* it could be
+                 * reallocated once we have written all the data to
+                 * disk and before we process the buffer on BJ_Forget
+                 * list.
+                 */
+            if (!jh->b_next_transaction)
+                try_to_free = 1;
+        }
+        JBUFFER_TRACE(jh, "refile or unfile buffer");
+        __jbdbf_journal_refile_buffer(jh);
+        jbdbf_unlock_bh_state(bh);
+        if (try_to_free)
+            release_buffer_page(bh);    /* Drops bh reference */
+        else
+            __brelse(bh);
+        cond_resched_lock(&journal->j_list_lock);
+    }
+    spin_unlock(&journal->j_list_lock);
+ 
+    /*
+     * 
+     * This is a bit sleazy.  We use j_list_lock to protect transition
+     * of a transaction into T_FINISHED state and calling
+     * __jbdbf_journal_drop_transaction(). Otherwise we could race with
+     * other checkpointing code processing the transaction...
+     */
 	write_lock(&journal->j_state_lock);
 	spin_lock(&journal->j_list_lock);
 
@@ -1154,6 +1188,7 @@ restart_loop:
 		write_unlock(&journal->j_state_lock);
 		goto restart_loop;
 	}
+    TIMESTAMP("END", "phase 6","");
 
 	/* Done with this transaction! */
 

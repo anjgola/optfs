@@ -43,9 +43,16 @@
  * 736 debug stuff
 */
 #define PROJ_736    0
-#define TIME_736    1
-#define SEC_TO_NSEC 1000000000
-#define SEC_TO_USEC 1000000
+#define TIME_736    1 
+#if TIME_736
+extern struct timespec clock_time;
+#define TIMESTAMP(a, b, c)  getnstimeofday(&clock_time);                                                \
+                            printk("736time, %s, %d, %s, %s, %s, %lu\n", __FILE__, __LINE__, a, b, c,   \
+                                (clock_time.tv_sec * NSEC_PER_SEC) + clock_time.tv_nsec);
+#else
+#define TIMESTAMP(a, b, c)
+#endif
+
 /*
  * Define EXT4FS_DEBUG to produce debug messages
  */
@@ -1853,7 +1860,7 @@ extern int ext4bf_init_inode_table(struct super_block *sb,
 
 /* ext4bf: turn on different features in the kernel. */
 #define DELAYED_REUSE
-#define PARTJ
+//#define PARTJ
 #define DCHECKSUM
 
 /* Batching number for data write outs. */
