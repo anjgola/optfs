@@ -618,7 +618,8 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 		   record the metadata buffer. */
 
 		if (!descriptor) {
-            TIMESTAMP("START", "phase 5","case 1");
+		        TIMESTAMP("START", "phase 5","1");
+		        TIMESTAMP2("START", "phase 5","1A");
 			struct buffer_head *bh;
 
 			J_ASSERT (bufs == 0);
@@ -652,8 +653,9 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 			BUFFER_TRACE(bh, "ph3: file as descriptor");
 			jbdbf_journal_file_buffer(descriptor, commit_transaction,
 					BJ_LogCtl);
-
+	            TIMESTAMP2("END", "phase 5","1A");
 #ifdef DCHECKSUM
+            TIMESTAMP2("START", "phase 5","1B");
 			/* EXT4BF */
             /* Add the data tags to the descriptor. */
             struct jbdbf_data_tag *entry;
@@ -687,6 +689,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
                 list_del(l);
                 jbdbf_free_data_tag(entry);
             }
+            TIMESTAMP2("END", "phase 5","1B");
 #endif
         TIMESTAMP("END", "5","1");
         }
@@ -773,6 +776,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 done_with_tags:
 
         TIMESTAMP("START","phase 5","3");
+        TIMESTAMP2("START", "phase 5","3A");
         /* ext4bf: continue with normal procesing. */
         jbd_debug(6, "EXT4BF: gonna submit the I/Os\n");
 		if (bufs == journal->j_wbufsize ||
@@ -786,24 +790,27 @@ done_with_tags:
                            the last tag we set up. */
 
 			tag->t_flags |= cpu_to_be32(JBD2_FLAG_LAST_TAG);
-
+        TIMESTAMP2("END", "phase 5","3A");
 start_journal_io:
 			for (i = 0; i < bufs; i++) {
 				struct buffer_head *bh = wbuf[i];
 				/*
 				 * Compute checksum.
 				 */
+			        TIMESTAMP2("START", "phase 5, 3B",i);
 				if (JBD2_HAS_COMPAT_FEATURE(journal,
 					JBD2_FEATURE_COMPAT_CHECKSUM)) {
 					crc32_sum =
 					    jbdbf_checksum_data(crc32_sum, bh);
 				}
-
+			        TIMESTAMP2("END", "phase 5, 3B",i);
+			        TIMESTAMP2("START", "phase 5, 3C",i);
 				lock_buffer(bh);
 				clear_buffer_dirty(bh);
 				set_buffer_uptodate(bh);
 				bh->b_end_io = journal_end_buffer_io_sync;
 				submit_bh(WRITE_SYNC, bh);
+			        TIMESTAMP2("END", "phase 5, 3C",i);
 			}
 			cond_resched();
 			stats.run.rs_blocks_logged += bufs;
@@ -815,6 +822,7 @@ start_journal_io:
 		}
 	}
 
+        TIMESTAMP2("START", "phase 5","3D");
 	err = journal_finish_inode_data_buffers(journal, commit_transaction);
 	if (err) {
 		printk(KERN_WARNING
@@ -824,7 +832,7 @@ start_journal_io:
 			jbdbf_journal_abort(journal, err);
 		err = 0;
 	}
-
+        TIMESTAMP2("END", "phase 5","3D");
     TIMESTAMP("END", "phase 5","3");
 wait_for_data:
     /* ext4bf: Wait for previous I/O to complete.*/
@@ -858,7 +866,7 @@ wait_for_data:
 	write_unlock(&journal->j_state_lock);
     TIMESTAMP("END", "phase 5","4");
     TIMESTAMP("START", "phase 5","5");
-
+    TIMESTAMP2("START", "phase 5","5A");
 	/* 
 	 * If the journal is not located on the file system device,
 	 * then we must flush the file system device before we issue
@@ -869,6 +877,8 @@ wait_for_data:
 	    (journal->j_flags & JBD2_BARRIER))
 		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
 
+    TIMESTAMP2("END", "phase 5","5A");
+    TIMESTAMP2("START", "phase 5","5B");
 	/* Done it all: now write the commit record asynchronously. */
 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
 				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
@@ -879,6 +889,7 @@ wait_for_data:
 	}
 
 	blk_finish_plug(&plug);
+    TIMESTAMP2("END", "phase 5","5B");
     TIMESTAMP("END", "phase 5","5");
     TIMESTAMP("START", "phase 5","6");
     
