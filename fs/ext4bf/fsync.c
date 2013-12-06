@@ -34,6 +34,9 @@
 
 #define OSYNC_COMMIT 0
 #define DSYNC_COMMIT 1
+#if TIME_736
+struct timespec clock_time;
+#endif
 
 static void dump_completed_IO(struct inode * inode)
 {
@@ -280,6 +283,7 @@ int ext4bf_osync_file(struct file *file, loff_t start, loff_t end)
     osync_cnt++;
     printk("736: ext4bf_osync_file called times: %d \n");
 #endif
+    TIMESTAMP("START", "ext4bf_osync_file", "")
     struct inode *inode = file->f_mapping->host;
 	struct ext4bf_inode_info *ei = EXT4_I(inode);
 	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
@@ -333,6 +337,7 @@ int ext4bf_osync_file(struct file *file, loff_t start, loff_t end)
 	ret = jbdbf_log_wait_commit(journal, commit_tid);
  out:
 	mutex_unlock(&inode->i_mutex);
+    TIMESTAMP("Normal END", "ext4bf_osync_file", "")
 	return ret;
 }
 
@@ -342,6 +347,7 @@ int ext4bf_dsync_file(struct file *file, loff_t start, loff_t end)
     unsigned static int dsync_cnt = 0;
     printk("736: ext4bf_dsync_file called times: %d \n", ++dsync_cnt);
 #endif
+    TIMESTAMP("START", "ext4bf_dsync_file", "")
     struct inode *inode = file->f_mapping->host;
 	struct ext4bf_inode_info *ei = EXT4_I(inode);
 	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
@@ -401,5 +407,6 @@ int ext4bf_dsync_file(struct file *file, loff_t start, loff_t end)
 	// blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
 
 	mutex_unlock(&inode->i_mutex);
+    TIMESTAMP("Normal END", "ext4bf_dsync_file", "")
 	return ret;
 }
