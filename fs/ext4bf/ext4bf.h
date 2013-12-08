@@ -34,6 +34,7 @@
 #endif
 
 #include <linux/list.h>
+#include "fletcher.h"
 
 /*
  * The fourth extended filesystem constants/structures
@@ -47,6 +48,7 @@
 #define TIME_736_1  1   
 #define OPT_CHECKSUM_736    1
 #define PLUG_736    0
+#define OPT_CHECKSUM_FLETCHER 1 
 #if TIME_736
 extern struct timespec clock_time;
 #define TIMESTAMP(a, b, c)  getnstimeofday(&clock_time);                                                \
