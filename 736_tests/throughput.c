@@ -32,7 +32,7 @@ int main (int argc, char *argv[])
     }
     srand(time(NULL));
 
-    for (mode = SEQ_R; mode <= RANDOM_R; mode++) {
+    for (mode = RANDOM_R; mode <= RANDOM_R; mode++) {
         if ((device = open(argv[1], O_RDWR, O_SYNC)) == -1) {
             printf("Could not open device, exiting\n");
             exit(1);

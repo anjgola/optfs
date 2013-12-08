@@ -1,10 +1,10 @@
-#define READ    1
-#define WRITE   0
+#define READ    0
+#define WRITE   1
 
 #define SEQ     1
 #define RANDOM  0
 
-#define DEVICE      0
+#define DEVICE      1
 #define FILE_SIZE   20 // in GB
 
 #define BLOCK_START (unsigned long) 128

@@ -1,6 +1,6 @@
 #define BLOCK_SIZE  4096
 #define REPEATS     1
-#define ADDR        (21 * 4096)
+#define ADDR        (13 * 4096)
 #define SLEEP       30
 #define SEC_TO_NSEC 1000000000
 
@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
 
         }// Seek to next BLOCK_SIZEd block.
         clock_gettime(CLOCK_MONOTONIC, &start);
-        if(write(device, buf, BLOCK_SIZE)==-1){
+        if(write(device, buf, 1)==-1){
             printf("Write Failed.At seek = %d ",seek);
             exit(1);
         }

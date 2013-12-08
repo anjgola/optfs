@@ -1,5 +1,5 @@
 #define BLOCK_SIZE  4096
-#define REPEATS     10
+#define REPEATS     1
 #define RANGE       (1024 * 1024 * 10)
 #define SLEEP       1
 #define NSEC_PER_SEC 1000000000
@@ -59,9 +59,9 @@ int main (int argc, char *argv[])
 
         sleep(SLEEP);
 
-#if 0
+#if 1
         if (read(device, buf, 1) == -1) {
-            printf("first read failed\n";)
+            printf("first read failed\n");
         }
 #endif
 
@@ -70,7 +70,7 @@ int main (int argc, char *argv[])
         }
 
         clock_gettime(CLOCK_MONOTONIC, &start);
-        read(device, buf, BLOCK_SIZE);
+        write(device, buf, BLOCK_SIZE);
         clock_gettime(CLOCK_MONOTONIC, &end);
         local_nsec = (end.tv_nsec - start.tv_nsec) + ((end.tv_sec - start.tv_sec) * NSEC_PER_SEC);
         acc_nsec += local_nsec;
