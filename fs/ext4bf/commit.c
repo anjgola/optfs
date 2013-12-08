@@ -29,7 +29,8 @@
 #include <linux/bitops.h>
 #include <asm/system.h>
 #include "ext4bf.h"
-
+//#include <zlib.h>
+#include "fletcher.h"
 #if TIME_736_1
 struct timespec clock_time;
 #endif
@@ -299,8 +300,13 @@ __u32 jbdbf_checksum_data(__u32 crc32_sum, struct buffer_head *bh)
     return 0;
 #endif
 	addr = kmap_atomic(page, KM_USER0);
-	checksum = crc32_be(crc32_sum,
-		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
+#if OPT_CHECKSUM_FLETCHER
+    //checksum = adler32(crc32_sum, (void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
+    checksum = fletcher32(crc32_sum,		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
+#else
+    checksum = crc32_be(crc32_sum,		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
+    
+#endif
 	kunmap_atomic(addr, KM_USER0);
 	return checksum;
 }
