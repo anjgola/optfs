@@ -30,11 +30,28 @@
 #include <asm/system.h>
 #include "ext4bf.h"
 //#include <zlib.h>
-#include "fletcher.h"
 #if TIME_736_1
 struct timespec clock_time;
 #endif
+ uint32_t fletcher32( uint32_t const crc32_sum, uint16_t const *data, size_t len );
+uint32_t fletcher32( uint32_t const crc32_sum, uint16_t const *data, size_t len )
+{
+    uint32_t sum1 = crc32_sum & 0xffff, sum2 = (crc32_sum >> 16) & 0xffff ;
+    size_t words = len/4;
+    while (words) {
+        unsigned tlen = words > 359 ? 359 : words;
+        words -= tlen;
+        do {
+            sum2 += sum1 += *data++;
+        } while (--tlen);
+        sum1 = (sum1 & 0xffff) + (sum1 >> 16);
+        sum2 = (sum2 & 0xffff) + (sum2 >> 16);
+    }
 
+    sum1 = (sum1 & 0xffff) + (sum1 >> 16);
+    sum2 = (sum2 & 0xffff) + (sum2 >> 16);
+    return sum2 << 16 | sum1;
+}
 /*
  * Default IO end handler for temporary BJ_IO buffer_heads.
  */
@@ -654,7 +671,12 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 				continue;
 			}
 
+            TIMESTAMP1("END", "phase 5","1A");
+            TIMESTAMP1("START", "phase 5","1B");
+           	 
 			bh = jh2bhbf(descriptor);
+            TIMESTAMP1("END", "phase 5","1B");
+            TIMESTAMP1("START", "phase 5","1C");
 			jbd_debug(4, "JBD2: got buffer %llu (%p)\n",
 				(unsigned long long)bh->b_blocknr, bh->b_data);
 			header = (journal_bf_header_t *)&bh->b_data[0];
@@ -674,9 +696,9 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 			BUFFER_TRACE(bh, "ph3: file as descriptor");
 			jbdbf_journal_file_buffer(descriptor, commit_transaction,
 					BJ_LogCtl);
-	            TIMESTAMP1("END", "phase 5","1A");
+            TIMESTAMP1("END", "phase 5","1C");
 #ifdef DCHECKSUM
-            TIMESTAMP1("START", "phase 5","1B");
+            TIMESTAMP1("START", "phase 5","1D");
 			/* EXT4BF */
             /* Add the data tags to the descriptor. */
             struct jbdbf_data_tag *entry;
@@ -710,7 +732,7 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
                 list_del(l);
                 jbdbf_free_data_tag(entry);
             }
-            TIMESTAMP1("END", "phase 5","1B");
+            TIMESTAMP1("END", "phase 5","1D");
 #endif
         TIMESTAMP("END", "5","1");
         }

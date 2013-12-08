@@ -32,15 +32,14 @@
 #include <linux/mutex.h>
 #include <linux/timer.h>
 #include <linux/slab.h>
-#include "fletcher.h"
 #endif
 
-#define PROJ_736 0
-#define TIME_736 0
-#define TIME_736_1  1
-#define OPT_CHECKSUM_736   0 
-#define PLUG_736    1
-#define OPT_CHECKSUM_FLETCHER 1 
+#define PROJ_736                0
+#define TIME_736                0
+#define TIME_736_1              0
+#define OPT_CHECKSUM_736        0 
+#define PLUG_736                0
+#define OPT_CHECKSUM_FLETCHER   1
 #if TIME_736
 extern struct timespec clock_time;
 #define TIMESTAMP(a, b, c)  getnstimeofday(&clock_time);                                                \
