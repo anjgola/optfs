@@ -791,13 +791,12 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 done_with_tags:
 
         TIMESTAMP("START","phase 5","3");
-        TIMESTAMP1("START", "phase 5","3A");
         /* ext4bf: continue with normal procesing. */
         jbd_debug(6, "EXT4BF: gonna submit the I/Os\n");
 		if (bufs == journal->j_wbufsize ||
 		    commit_transaction->t_buffers == NULL ||
 		    space_left < tag_bytes + 16) {
-
+            TIMESTAMP1("START", "phase 5","3A");
 			jbd_debug(4, "JBD2: Submit %d IOs\n", bufs);
 
 			/* Write an end-of-descriptor marker before
@@ -805,7 +804,7 @@ done_with_tags:
                            the last tag we set up. */
 
 			tag->t_flags |= cpu_to_be32(JBD2_FLAG_LAST_TAG);
-        TIMESTAMP1("END", "phase 5","3A");
+            TIMESTAMP1("END", "phase 5","3A");
 start_journal_io:
 			for (i = 0; i < bufs; i++) {
 				struct buffer_head *bh = wbuf[i];
