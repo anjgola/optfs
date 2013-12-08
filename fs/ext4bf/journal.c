@@ -125,12 +125,15 @@ static void
 __flush_data_batch(int *batch_count)
 {
 	int i;
+#if PLUG_736
 	struct blk_plug plug;
-
 	blk_start_plug(&plug);
+#endif
 	for (i = 0; i < *batch_count; i++)
 		write_dirty_buffer(j_dirty_data_bhs[i], WRITE_SYNC);
+#if PLUG_736
 	blk_finish_plug(&plug);
+#endif
 
 	for (i = 0; i < *batch_count; i++) {
 		struct buffer_head *bh = j_dirty_data_bhs[i];

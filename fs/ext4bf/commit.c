@@ -294,9 +294,10 @@ __u32 jbdbf_checksum_data(__u32 crc32_sum, struct buffer_head *bh)
 	struct page *page = bh->b_page;
 	char *addr;
 	__u32 checksum;
-
+#if OPT_CHECKSUM_736
 //736 Trying to optimize checksum. hah!
     return 0;
+#endif
 	addr = kmap_atomic(page, KM_USER0);
 	checksum = crc32_be(crc32_sum,
 		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
@@ -326,12 +327,17 @@ static void
 __flush_data_batch(int *batch_count)
 {
 	int i;
-	struct blk_plug plug;
 
+#if PLUG_736
+	struct blk_plug plug;
 	blk_start_plug(&plug);
+#endif
+
 	for (i = 0; i < *batch_count; i++)
 		write_dirty_buffer(j_data_bhs[i], WRITE_SYNC);
+#if PLUG_736
 	blk_finish_plug(&plug);
+#endif
 
 	for (i = 0; i < *batch_count; i++) {
 		struct buffer_head *bh = j_data_bhs[i];
@@ -371,7 +377,9 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 	struct buffer_head *cbh = NULL; /* For transactional checksums */
 	__u32 crc32_sum = ~0;
 	__u32 crc32_data_sum = ~0;
+#if PLUG_736
 	struct blk_plug plug;
+#endif
 
 	/*
 	 * First job: lock down the current transaction and wait for
@@ -555,10 +563,14 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 		jbdbf_journal_abort(journal, err);
     }
 
-	blk_start_plug(&plug);
+#if PLUG_736
+    blk_start_plug(&plug);
+#endif
 	jbdbf_journal_write_revoke_records(journal, commit_transaction,
 					  WRITE_SYNC);
-	blk_finish_plug(&plug);
+#if PLUG_736
+    blk_finish_plug(&plug);
+#endif
 
 	jbd_debug(3, "JBD2: commit phase 2\n");
 
@@ -585,7 +597,9 @@ void jbdbf_journal_commit_transaction(journal_t *journal)
 	err = 0;
 	descriptor = NULL;
 	bufs = 0;
+#if PLUG_736
 	blk_start_plug(&plug);
+#endif
 	while (commit_transaction->t_buffers) {
 
 		/* Find the next buffer to be journaled... */
@@ -889,7 +903,9 @@ wait_for_data:
 			__jbdbf_journal_abort_hard(journal);
 	}
 
-	blk_finish_plug(&plug);
+#if PLUG_736
+    blk_finish_plug(&plug);
+#endif
     TIMESTAMP1("END", "phase 5","5B");
     TIMESTAMP("END", "phase 5","5");
     TIMESTAMP("START", "phase 5","6");
