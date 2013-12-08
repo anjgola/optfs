@@ -5,8 +5,8 @@
 #include <unistd.h>
 
 /* Wrappers for osync and dsync. */
-//#define __NR_osync 349
-//#define __NR_dsync 350
+#define __NR_osync 312
+#define __NR_dsync 313
 
 int osync(int fd) 
 {
