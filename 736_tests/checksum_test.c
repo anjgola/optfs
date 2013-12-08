@@ -1,11 +1,15 @@
-#define FLETCHER    0
-#define CRC         1
+#define FLETCHER    1
+#define CRC         0
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
+#if CRC
 #include </optfs/include/linux/crc32.h>
+#endif
+
 #include <time.h>
 #define REPEATS 100
 #define u8 uint8_t
@@ -53,7 +57,7 @@ int main ()
         checksum2 = fletcher32(~0, (uint16_t *) block2, 4096);
 #endif
 #if CRC
-        checksum1 = crc32_be(~0, (uint16_t *) block2, 4096);
+        checksum2 = crc32_be(~0, (uint16_t *) block2, 4096);
 #endif
         clock_gettime(CLOCK_MONOTONIC, &end);
         fletcher32_time += ((end.tv_nsec - start.tv_nsec) + ((end.tv_sec - start.tv_sec) * 1000000000));
