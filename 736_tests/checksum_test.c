@@ -1,19 +1,23 @@
-#define FLETCHER    1
-#define CRC         0
+#define FLETCHER    0
+#define CRC         1
+
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/param.h>
-//#include <sys/system.h>
 #include <time.h>
 #define REPEATS 100
 #define u8 uint8_t
 #define u32 uint32_t
 
+#if CRC
 uint32_t crc32(uint32_t crc, const void *buf, size_t size);
+#endif
+#if FLETCHER
 uint32_t fletcher32(uint16_t *data, size_t len);
+#endif
 
 int main ()
 {
@@ -73,6 +77,7 @@ int main ()
 } //main ends here
 
 //checksum routines
+#if FLETCHER
 uint32_t fletcher32(uint16_t *data, size_t len) {
     uint32_t sum1 = 0xffff, sum2 = 0xffff;
 
@@ -91,7 +96,8 @@ uint32_t fletcher32(uint16_t *data, size_t len) {
     sum2 = (sum2 & 0xffff) + (sum2 >> 16);
     return sum2 << 16 | sum1;
 }
-
+#endif
+#if CRC
 static uint32_t crc32_tab[] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
     0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -150,3 +156,4 @@ uint32_t crc32(uint32_t crc, const void *buf, size_t size)
 
     return crc ^ ~0U;
 }
+#endif
