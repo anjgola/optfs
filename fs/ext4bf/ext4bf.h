@@ -45,9 +45,10 @@
 #define PROJ_736                0
 #define TIME_736                0 
 #define TIME_736_1              0   
+#define TIME_736_2              1
 #define OPT_CHECKSUM_736        0 // 1 to skip checksums
 #define PLUG_736                0 // 0 to remove the plug code
-#define OPT_CHECKSUM_FLETCHER   1 // 1 to enable fletcher checksum. OPT_CHECKSUM_736 should be 0
+#define OPT_CHECKSUM_FLETCHER   0 // 1 to enable fletcher checksum. OPT_CHECKSUM_736 should be 0
 #if TIME_736
 extern struct timespec clock_time;
 #define TIMESTAMP(a, b, c)  getnstimeofday(&clock_time);                                                \
@@ -63,6 +64,14 @@ extern struct timespec clock_time;
                                 (clock_time.tv_sec * NSEC_PER_SEC) + clock_time.tv_nsec);
 #else
 #define TIMESTAMP1(a, b, c)
+#endif
+#if TIME_736_2
+extern struct timespec clock_time;
+#define TIMESTAMP2(a, b, c)  getnstimeofday(&clock_time);                                                \
+                            printk("736time_2, %s, %d, %s, %s, %s, %lu\n", __FILE__, __LINE__, a, b, c,   \
+                                (clock_time.tv_sec * NSEC_PER_SEC) + clock_time.tv_nsec);
+#else
+#define TIMESTAMP2(a, b, c)
 #endif
 
 

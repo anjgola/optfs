@@ -872,10 +872,10 @@ int jbdbf_journal_bmap(journal_t *journal, unsigned long blocknr,
  */
 struct journal_bf_head *jbdbf_journal_get_descriptor_buffer(journal_t *journal)
 {
-	struct buffer_head *bh;
+    TIMESTAMP2("START", "phase 1","");
+    struct buffer_head *bh;
 	unsigned long long blocknr;
 	int err;
-
 	err = jbdbf_journal_next_log_block(journal, &blocknr);
 
 	if (err)
@@ -884,12 +884,19 @@ struct journal_bf_head *jbdbf_journal_get_descriptor_buffer(journal_t *journal)
 	bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
 	if (!bh)
 		return NULL;
-	lock_buffer(bh);
+    TIMESTAMP2("END", "phase 1","");
+    TIMESTAMP2("START", "phase 2","");
+
+    lock_buffer(bh);
 	memset(bh->b_data, 0, journal->j_blocksize);
 	set_buffer_uptodate(bh);
 	unlock_buffer(bh);
-	BUFFER_TRACE(bh, "return this buffer");
-	return jbdbf_journal_add_journal_bf_head(bh);
+    TIMESTAMP2("END", "phase 2","");
+
+    BUFFER_TRACE(bh, "return this buffer");
+ 
+    return jbdbf_journal_add_journal_bf_head(bh);
+  
 }
 
 struct jbdbf_stats_proc_session {
@@ -2262,6 +2269,7 @@ static void journal_free_journal_bf_head(struct journal_bf_head *jh)
  */
 struct journal_bf_head *jbdbf_journal_add_journal_bf_head(struct buffer_head *bh)
 {
+    TIMESTAMP2("START","phase 3","");
 	struct journal_bf_head *jh;
 	struct journal_bf_head *new_jh = NULL;
 
@@ -2298,6 +2306,7 @@ repeat:
 	jbd_unlock_bh_journal_bf_head(bh);
 	if (new_jh)
 		journal_free_journal_bf_head(new_jh);
+    TIMESTAMP2("END","phase 3","");
 	return bh->b_private;
 }
 
